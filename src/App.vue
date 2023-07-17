@@ -1,26 +1,90 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <Navbar @setSearch="searchValue = $event" />
+
+    <Notes :notes="filterNotes" @delNote="delNote" @change="change" />
+
+    <Modal v-show="isModalOpen" @close="isModalOpen = false" @addNote="addNote" :edit="edit" :editedNote="editedNote"
+        @changedNote="changedNote" />
+
+    <button class="addNote" @click="isModalOpen = true, edit = false" v-show="!isModalOpen">
+        <img src="@/assets/img/pens.svg" alt="pens">
+    </button>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import Navbar from './components/Navbar.vue';
+import Notes from './components/Notes.vue';
+import Modal from './components/Modal.vue';
+
+
 
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
+    components: {
+        Navbar,
+        Notes,
+        Modal
+    },
+    data() {
+        return {
+            notes: [],
+            isModalOpen: false,
+            edit: false,
+            editedNote: null,
+            searchValue: ''
+        }
+    },
+    methods: {
+        addNote(note) {
+            this.notes.push(note)
+        },
+        getNotes() {
+            let localNotes = localStorage.notes
+
+            if (localNotes) {
+                this.notes = JSON.parse(localNotes)
+            }
+        },
+
+        delNote(id) {
+            const index = this.notes.findIndex(note => note.id === id);
+            if (index !== -1) {
+                this.notes.splice(index, 1);
+            }
+        },
+
+        change(id) {
+            this.isModalOpen = this.edit = true
+            let currentNote = this.notes.find(note => note.id === id)
+            this.editedNote = currentNote
+        },
+        changedNote(newNote) {
+            this.notes.forEach(note => {
+                if (note.id == newNote.id) {
+                    note.title = newNote.title
+                    note.text = newNote.text
+                    note.date = newNote.date
+                }
+            })
+        }
+    },
+    watch: {
+        notes: {
+
+            handler() {
+                localStorage.notes = JSON.stringify(this.notes)
+            },
+            deep: true
+        }
+    },
+    mounted() {
+        this.getNotes()
+    },
+    computed: {
+        filterNotes() {
+            return this.searchValue ?
+                this.notes.filter(note => note.title.toLowerCase().includes(this.searchValue.toLowerCase())) : this.notes
+        }
+    }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
